@@ -35,56 +35,19 @@ paintSkyLoop:
 	addi $t0, $t0, 4 		# $t0 = $t0++
 	ble $t0, $t2, paintSkyLoop
 
-paintPipes:
-	li $v0, 42 				# 42 syscall to randomize between range
-	li $a0, 0   				# min to choose from
-	li $a1, 23
-	syscall
-	
-	#addi $t0, $zero, 57344
-	#addi $t0, $t0, 0x10008000
-	lw $t0, displayAddress
-	#addi $t0, $t0, 0x100081e0
-	
+paintPipesInit:
 	li $t3, 3968
-	add $t0, $t0, $t3
+	li $t4, 0
 	
-	li $t2, 4
-	mult $a0, $t2
-	mflo $t2
-	
-	add $t0, $t0, $t2	
-	
-	lw $t1, sky
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	
-	# second pipe
-	li $v0, 42 				# 42 syscall to randomize between range
-	li $a0, 0   				# min to choose from
-	li $a1, 23
+paintPipes:
+	li $v0, 42 		# 42 syscall to randomize between range
+	li $a0, 0   		# min to choose from
+	li $a1, 23		# set max to 23 (32 - 8 - 1)
 	syscall
 	
-	#addi $t0, $zero, 57344
-	#addi $t0, $t0, 0x10008000
 	lw $t0, displayAddress
-	#addi $t0, $t0, 0x100081e0
 	
-	li $t3, 2944
+	sub $t3, $t3, $t4 
 	add $t0, $t0, $t3
 	
 	li $t2, 4
@@ -94,61 +57,19 @@ paintPipes:
 	add $t0, $t0, $t2	
 	
 	lw $t1, sky
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-
-
-	# third pipe
-	li $v0, 42 				# 42 syscall to randomize between range
-	li $a0, 0   				# min to choose from
-	li $a1, 23
-	syscall
+	li $t6, 0
+	li $t7, 7
 	
-	#addi $t0, $zero, 57344
-	#addi $t0, $t0, 0x10008000
-	lw $t0, displayAddress
-	#addi $t0, $t0, 0x100081e0
+	paintPipeLoop:
+		sw $t1, 0($t0)
+		addi $t0, $t0, 4
+		addi $t6, $t6, 1
+		ble, $t6, $t7, paintPipeLoop
 	
-	li $t3, 1920
-	add $t0, $t0, $t3
-	
-	li $t2, 4
-	mult $a0, $t2
-	mflo $t2
-	
-	add $t0, $t0, $t2	
-	
-	lw $t1, sky
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
-	sw $t1, 0($t0)
-	addi $t0, $t0, 4
+	li $t4, 1024
+	li $t5, 1920
+	ble $t3, $t5, Exit
+	j paintPipes
 
 addBird:
 	lw $t0, displayAddress
