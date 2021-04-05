@@ -10,6 +10,7 @@
 .data
 	displayAddress:	.word 0x10008000
 	pipeLength: .word 4
+	birdStartPos: .word 3776
 
 	# Colors for painting on the screen
 	sky: .word 0x2c7493
@@ -34,6 +35,19 @@ paintSkyLoop:
 	sw $t1, 0($t0)	 		# paint the first (top-left) unit red.
 	addi $t0, $t0, 4 		# $t0 = $t0++
 	ble $t0, $t2, paintSkyLoop
+
+addBird:
+	lw $t0, displayAddress
+	lw $t1, bird
+	lw $t2, birdStartPos
+	add $t0, $t0, $t2
+	
+	sw $t1, 0($t0)
+	sw $t1, 124($t0)
+	sw $t1, 128($t0)
+	sw $t1, 132($t0)
+	sw $t1, 252($t0)
+	sw $t1, 260($t0)
 
 paintPipesInit:
 	li $t3, 3968
@@ -72,11 +86,6 @@ paintPipes:
 	
 
 	j paintPipes
-
-addBird:
-	lw $t0, displayAddress
-	
-
 
 Exit:
 	li $v0, 10 # terminate the program gracefully
