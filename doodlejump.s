@@ -10,7 +10,9 @@
 .data
 	displayAddress:	.word 0x10008000
 	pipeLength: .word 4
-	birdStartPos: .word 3776
+	birdPos: .word 3648
+	height: .word 0
+	up: .word 1
 
 	# Colors for painting on the screen
 	sky: .word 0x2c7493
@@ -22,32 +24,122 @@
 # main to start from which leads to a loop to 
 # create our static view
 main:
-	j paintSkyLoopInit
 
-paintSkyLoopInit:
-	lw $t0, displayAddress	# $t0 stores the base address for display
-	lw $t1, sky				# $t1 stores the blue colour code
-	addi $t2, $zero, 4096
-	addi $t2, $t2, 0x10008000
-	j paintSkyLoop
+	mainLoop: # Main loop until the game is over
+		jal paintSky
 
-paintSkyLoop:
-	sw $t1, 0($t0)	 		# paint the first (top-left) unit red.
-	addi $t0, $t0, 4 		# $t0 = $t0++
-	ble $t0, $t2, paintSkyLoop
+		animateBird:
+			lw $t0, up
+			blez $t0, animateBirdDown
+		
+		animateBirdUp:
+			lw $t0, displayAddress # Display Address
+			lw $t1, bird # Bird Color
+			jal animateUp
+			j nothing
+		
+		animateBirdDown:
+			lw $t0, displayAddress # Display Address
+			lw $t1, bird # Bird Color
+			jal animateDown
+			j nothing
 
-addBird:
-	lw $t0, displayAddress
-	lw $t1, bird
-	lw $t2, birdStartPos
-	add $t0, $t0, $t2
+		nothing:
+
+		# Sleep to delay animation
+		li $v0, 32		
+		move $a0, $v1
+		syscall
+
+		j mainLoop
+
+
+paintSky:
+	paintSkyLoopInit:
+		lw $t0, displayAddress	# $t0 stores the base address for display
+		lw $t1, sky				# $t1 stores the blue colour code
+		addi $t2, $zero, 4096
+		addi $t2, $t2, 0x10008000
+		j paintSkyLoop
+
+	paintSkyLoop:
+		sw $t1, 0($t0)	 		# paint the first (top-left) unit red.
+		addi $t0, $t0, 4 		# $t0 = $t0++
+		ble $t0, $t2, paintSkyLoop
 	
-	sw $t1, 0($t0)
-	sw $t1, 124($t0)
-	sw $t1, 128($t0)
-	sw $t1, 132($t0)
-	sw $t1, 252($t0)
-	sw $t1, 260($t0)
+	jr $ra
+
+#	addBirdInit:
+#	lw $t0, displayAddress # Display Address
+#	lw $t1, bird # Bird Color
+
+animateUp:
+	lw $t2, birdPos # Bird Offset
+	add $s1, $t0, $t2 # Current Bird Location
+
+	sw $t1, 0($s1)   # Next 5 lines drawing the bird
+	sw $t1, 124($s1)
+	sw $t1, 128($s1)
+	sw $t1, 132($s1)
+	sw $t1, 252($s1)
+	sw $t1, 260($s1)
+
+	la $t0, birdPos # Address of birdPos
+	lw $t1, birdPos # Value of birdPos
+	addi $t1, $t1, -128 # Move a line up
+	sw $t1, 0($t0) # Store new bird location in birdPos
+
+	la $t0, height # Address of jump
+	lw $t1, height # Value of jump
+	addi $t1, $t1, 1 # $t1 += 1
+
+	jumpUpComplete:
+		beq $t1, 9, jumpUpCompleteThen
+		j jumpUpCompleteDone
+	
+	jumpUpCompleteThen:
+		la $t2, up # Address of up
+		li $t3, 0 
+		sw $t3, 0($t2) # Make up true by setting it to 1
+
+	jumpUpCompleteDone:
+		sw $t1, 0($t0) # Store new jump height
+
+	jr $ra
+
+animateDown:
+	lw $t2, birdPos # Bird Offset
+	add $s1, $t0, $t2 # Current Bird Location
+
+	sw $t1, 0($s1)   # Next 5 lines drawing the bird
+	sw $t1, 124($s1)
+	sw $t1, 128($s1)
+	sw $t1, 132($s1)
+	sw $t1, 252($s1)
+	sw $t1, 260($s1)
+
+	la $t0 birdPos # Address of birdPos
+	lw $t1 birdPos # Value of birdPos
+	addi $t1, $t1, 128 # Move a line down
+	sw $t1, 0($t0) # Store new bird location in birdPos
+
+	la $t0, height # Address of jump
+	lw $t1, height # Value of jump
+	addi $t1, $t1, -1 # $t1 += 1
+
+	jumpDownComplete:
+		beq $t1, $zero, jumpDownCompleteThen
+		j jumpDownCompleteDone
+	
+	jumpDownCompleteThen:
+		la $t2, up # Address of up
+		li $t3, 1 
+		sw $t3, 0($t2) # Make up true by setting it to 1
+
+	jumpDownCompleteDone:
+		sw $t1, 0($t0) # Store new jump height
+
+	jr $ra
 
 paintPipesInit:
 	li $t3, 3968
