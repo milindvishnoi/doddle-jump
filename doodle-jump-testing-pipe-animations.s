@@ -13,10 +13,12 @@
 	birdPos: .word 3648
 	height: .word 0
 	up: .word 1
-	bottomPipeOffset: .word 4
-	topPipeOffset: .word 4
-	middlePipeOffset: .word 4
 	middlePipePos: .word 4
+	bottomPipePos: .word 4
+	topPipePos: .word 4
+	#middleRowStart: .word 2936
+	middleRowStart: .word 2424
+	endOfScreen: .word 4096
 	newline: .asciiz "\n"
 	pipeString: .asciiz "pipe: "
 	birdString: .asciiz "bird: "
@@ -56,11 +58,12 @@ main:
 
 			# Sleep to delay animation
 			li $v0, 32		
-			li $a0, 32	# Jessica slowed down the animation
+			li $a0, 64	# Jessica slowed down the animation
 			syscall
 		
 			jal paintSky
-			j checkBirdHitPipe
+			jal adjustPipes
+			#jal redrawPipes
 			j mainLoop
 
 
@@ -137,134 +140,176 @@ animateDown:
 	lw $t1, height # Value of jump
 	addi $t1, $t1, -1 # $t1 += 1
 
-	jumpDownComplete:
-		beq $t1, $zero, jumpDownCompleteThen
-		j jumpDownCompleteDone
+	#jumpDownComplete:
+		#beq $t1, $zero, jumpDownCompleteThen
+		#j jumpDownCompleteDone
 	
-	jumpDownCompleteThen:
-		la $t2, up # Address of up
-		li $t3, 1 
-		sw $t3, 0($t2) # Make up true by setting it to 1
+	#jumpDownCompleteThen:
+		#la $t2, up # Address of up
+		#li $t3, 1 
+		#sw $t3, 0($t2) # Make up true by setting it to 1
 
-	jumpDownCompleteDone:
-		sw $t1, 0($t0) # Store new jump height
-
-	jr $ra
+	#jumpDownCompleteDone:
+	sw $t1, 0($t0) # Store new jump height
+	
+	j checkBirdHitPipe
+	here:
+		jr $ra
+		
 	
 checkBirdHitPipe:
 	lw $t0, birdPos			# Get pos of bird
+	
+InitalizeLeftHitMiddleCheck:
 	lw $t1, middlePipePos	# Get pos of middle pipe
 	
-	#addi $t0, $t0, 28	# check bird address down one row because it's currently on top of the pipe
+	addi $t0, $t0, 380	# check bird address down one row because it's currently on top of the pipe
 	
 	# check if the bird is on any part of the pipe	
 	li $t3, 0	# initialize loop condition
 	li $t4, 7
 	
-checkBirdHitPipeLoop:
+checkLeftHitMiddleLoop:
 	beq $t0, $t1, BirdHit
-	bge $t3, $t4, BirdNotHit
-	
-	li $v0, 4			# syscall to print string
-	la $a0, birdString		# a0 = "\n"
-	syscall
-	
-	li $v0, 1			# syscall to print string
-	move $a0, $t0			# a0 = "\n"
-	syscall
-	
-	li $v0, 4			# syscall to print string
-	la $a0, newline			# a0 = "\n"
-	syscall
-	
-	li $v0, 4			# syscall to print string
-	la $a0, pipeString		# a0 = "\n"
-	syscall
-	
-	li $v0, 1			# syscall to print string
-	move $a0, $t1			# a0 = "\n"
-	syscall
-	
-	li $v0, 4			# syscall to print string
-	la $a0, newline			# a0 = "\n"
-	syscall 	
+	bge $t3, $t4, InitalizeRightHitMiddleCheck
 	
 	addi $t1, $t1, 4
 	addi $t3, $t3, 1
 	
-	j checkBirdHitPipeLoop
+	j checkLeftHitMiddleLoop
+	
+InitalizeRightHitMiddleCheck:
+	lw $t1, middlePipePos	# Get pos of middle pipe
+		
+	addi $t0, $t0, 388	# check bird address down one row because it's currently on top of the pipe
+	
+	# check if the bird is on any part of the pipe	
+	li $t3, 0	# initialize loop condition
+	li $t4, 7
+	
+checkRightHitMiddleLoop:
+	beq $t0, $t1, BirdHit
+	bge $t3, $t4, InitalizeLeftHitBottomCheck
+	
+	addi $t1, $t1, 4
+	addi $t3, $t3, 1
+	
+	j checkRightHitMiddleLoop
+
+InitalizeLeftHitBottomCheck:
+	lw $t1, bottomPipePos	# Get pos of middle pipe
+		
+	addi $t0, $t0, 380	# check bird address down one row because it's currently on top of the pipe
+	
+	# check if the bird is on any part of the pipe	
+	li $t3, 0	# initialize loop condition
+	li $t4, 7
+	
+checkLeftHitBottomLoop:
+	beq $t0, $t1, BirdHit
+	bge $t3, $t4, InitalizeRightHitBottomCheck
+	
+	addi $t1, $t1, 4
+	addi $t3, $t3, 1
+	
+	j checkLeftHitBottomLoop
+	
+InitalizeRightHitBottomCheck:
+	lw $t1, bottomPipePos	# Get pos of middle pipe
+		
+	addi $t0, $t0, 388	# check bird address down one row because it's currently on top of the pipe
+	
+	# check if the bird is on any part of the pipe	
+	li $t3, 0	# initialize loop condition
+	li $t4, 7
+			
+checkRightHitBottomLoop:
+	beq $t0, $t1, BirdHit
+	bge $t3, $t4, BirdNotHit
+	
+	addi $t1, $t1, 4
+	addi $t3, $t3, 1
+	
+	j checkRightHitBottomLoop
 	
 BirdHit:
-	# draw new bottom pipe
+	la $t0, height # Address of jump
+	sw $zero, 0($t0)
+	
+	la $t0, up
+	li $t1, 1
+	sw $t1, up
+	
+	j here
+	
+BirdNotHit:
+	j here
+	
+adjustPipes:
+	lw $t0, birdPos
+	lw $t1, middleRowStart
+	
+	bge $t0, $t1, redrawPipes # only move pipes if bird is at least at the middle row
+	la $t0, up
+	beq $zero, $t0, redrawPipes # and if bird is moving up
+	
+	lw $t0, topPipePos
+	addi $t0, $t0, 128
+	sw $t0, topPipePos
+	
+	lw $t0, middlePipePos
+	addi $t0, $t0, 128
+	sw $t0, middlePipePos
+	
+	lw $t0, bottomPipePos
+	addi $t0, $t0, 128
+	sw $t0, bottomPipePos	
+	
+	lw $t1, endOfScreen	# if bottom pipe is on last row, generate a new pipe
+	bge $t0, $t1, generateNewPipe
+	
+redrawPipes: 		# re-draw all pipes in same positions
 	jal paintPipesInit
-	
-	lw $a0, middlePipeOffset	# bottom pipe gets middle pipe's offset
-	li $t2, 4
-	mult $a0, $t2
-	mflo $t2
-	
-	sub $t3, $t3, $t4
-	add $t2, $t2, $t3
-	
-	sw $t2, bottomPipeOffset
-	
-	jal paintPipes	# draw bottom pipe
 
-	# draw new middle pipe
-	lw $a0, topPipeOffset	# middle pipe gets top pipe's offset
-	li $t2, 4
-	mult $a0, $t2
-	mflo $t2
+	# bottom pipe
+	lw $t2, bottomPipePos
+	jal paintPipes
 	
-	sub $t3, $t3, $t4
-	add $t2, $t2, $t3
+	# middle pipe
+	lw $t2, middlePipePos
+	jal paintPipes
 	
-	sw $t2, middlePipeOffset
+	# top pipe
+	lw $t2, topPipePos
+	jal paintPipes
 	
-	jal paintPipes		# draw middle pipe
+	j mainLoop
 	
-	# draw new top pipe
-	li $v0, 42 		# top pipe is a new random pipe
-	li $a0, 0   		
-	li $a1, 23		
+generateNewPipe:
+	lw $t0, middlePipePos	# bottom pipe becomes the middle pipe
+	sw $t0, bottomPipePos
+	
+	lw $t0, topPipePos		# top pipe becomes the middle pipe
+	sw $t0, middlePipePos
+	
+	# generate new random pipe on the top row
+	li $v0, 42
+	li $a0, 0
+	li $a1, 23
 	syscall
 	
 	li $t2, 4
 	mult $a0, $t2
 	mflo $t2
 	
-	sub $t3, $t3, $t4
+	li $t3, 1024		# 1920 is the top row of platforms
 	add $t2, $t2, $t3
 	
-	sw $t2, topPipeOffset		
-	
-	jal paintPipes		# draw top pipe
-	j mainLoop		# back to main loop
-	
-BirdNotHit:	# re-draw all pipes in same positions
-	# re-draw first pipe
-	jal paintPipesInit
-		
-	lw $t2, bottomPipeOffset
-	sub $t3, $t3, $t4
-	add $t2, $t2, $t3
-	jal paintPipes
-	
-	# re-draw second pipe
-	lw $t2, middlePipeOffset
-	sub $t3, $t3, $t4
-	add $t2, $t2, $t3
-	jal paintPipes
-	
-	# re-draw thirs pipe
-	lw $t2, topPipeOffset
-	sub $t3, $t3, $t4
-	add $t2, $t2, $t3
-	jal paintPipes
-	
-	j mainLoop
-	
-paintFirstPipe:
+	sw $t2, topPipePos
+
+	j redrawPipes
+
+paintFirstPipe:	
 	jal paintPipesInit
 	
 	li $v0, 42 		# 42 syscall to randomize between range
@@ -276,10 +321,10 @@ paintFirstPipe:
 	mult $a0, $t2
 	mflo $t2
 	
-	sw $t2, bottomPipeOffset
-	
 	sub $t3, $t3, $t4
 	add $t2, $t2, $t3
+	
+	sw $t2, bottomPipePos
 	
 	jal paintPipes
 	
@@ -292,8 +337,6 @@ secondPipe:
 	li $t2, 4
 	mult $a0, $t2
 	mflo $t2
-	
-	sw $t2, middlePipeOffset
 	
 	sub $t3, $t3, $t4
 	add $t2, $t2, $t3
@@ -312,20 +355,20 @@ thirdPipe:
 	mult $a0, $t2
 	mflo $t2
 	
-	sw $t2, topPipeOffset
-	
 	sub $t3, $t3, $t4
 	add $t2, $t2, $t3
+	
+	sw $t2, topPipePos
 
 	jal paintPipes
 	j mainLoop
-
+	
 paintPipesInit:
 	li $t3, 3968		# start drawing pipes on bottom row
 	li $t4, 0		# row offset
 	
 	jr $ra
-
+	
 paintPipes:	
 	lw $t0, displayAddress
 	
