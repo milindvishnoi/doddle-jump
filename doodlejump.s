@@ -23,6 +23,7 @@
 	sky: .word 0x2c7493
 	pipe: .word 0x361414
 	bird: .word 0x2f5c2c
+	red: .word 0xEE2020
 	
 
 .text
@@ -65,7 +66,47 @@ main:
 			jal keyboardInput
 			jal paintSky
 			jal adjustPipes
-			j mainLoop
+
+		alwaysCheckGameOver:
+			j checkGameOver
+		
+		j mainLoop
+		
+	gameOver:
+		jal paintGameOverScreen
+		j Exit
+
+paintGameOverScreen:
+	li $t0, 0x100088A8
+	lw $t1, red
+	jal paintR
+
+	jal animateLetters
+
+	li $t0, 0x100087BC
+	jal paintI
+
+	jal animateLetters
+
+	li $t0, 0x100087C8
+	jal paintP
+
+	jr $ra
+
+animateLetters:
+	# Sleep to delay animation
+	li $v0, 32		
+	li $a0, 500
+	syscall
+
+	jr $ra
+
+checkGameOver:
+	lw $t0, birdPos
+	addi $t0, $t0, 256 # bottom of the bird
+	lw $t1, endOfScreen
+	bgt $t0, $t1, gameOver
+	j mainLoop
 
 keyboardInput:	
 	lw $t0, 0xffff0000
@@ -126,7 +167,7 @@ animateUp:
 	addi $t1, $t1, 1 # $t1 += 1
 
 	jumpUpComplete:
-		beq $t1, 9, jumpUpCompleteThen
+		beq $t1, 8, jumpUpCompleteThen
 		j jumpUpCompleteDone
 	
 	jumpUpCompleteThen:
@@ -236,6 +277,8 @@ adjustPipes:
 	
 	lw $t1, endOfScreen	# if bottom pipe is on last row, generate a new pipe
 	bge $t0, $t1, generateNewPipe
+
+	j alwaysCheckGameOver
 	
 redrawPipes: 		# re-draw all pipes in same positions
 	jal paintPipesInit
@@ -252,7 +295,7 @@ redrawPipes: 		# re-draw all pipes in same positions
 	lw $t2, topPipePos
 	jal paintPipes
 	
-	j mainLoop
+	j alwaysCheckGameOver
 	
 generateNewPipe:
 	lw $t0, middlePipePos	# bottom pipe becomes the middle pipe
@@ -355,7 +398,44 @@ paintPipes:
 	
 	li $t4, 1024
 	jr $ra
-	
+
+# For all paint letter functions we need to provide the color in $t1 
+# and location of top-left block in $t0
+paintR:
+	sw $t1, 0($t0)
+	sw $t1, 128($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 256($t0)
+	jr $ra
+
+paintI:
+	sw $t1, -4($t0)
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 128($t0)
+	sw $t1, 256($t0)
+	sw $t1, 384($t0)
+	sw $t1, 512($t0)
+	sw $t1, 508($t0)
+	sw $t1, 516($t0)
+	jr $ra
+
+paintP:
+	sw $t1, 0($t0)
+	sw $t1, 128($t0)
+	sw $t1, 256($t0)
+	sw $t1, 384($t0)
+	sw $t1, 512($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 12($t0)
+	sw $t1, 140($t0)
+	sw $t1, 268($t0)
+	sw $t1, 264($t0)
+	sw $t1, 260($t0)
+	jr $ra
+
 Exit:
 	li $v0, 10 # terminate the program gracefully
 	syscall
