@@ -18,9 +18,6 @@
 	topPipePos: .word 4
 	startMovingPipes: .word 2424
 	endOfScreen: .word 4096
-	newline: .asciiz "\n"
-	pipeString: .asciiz "pipe: "
-	birdString: .asciiz "bird: "
 	
 	# Colors for painting on the screen
 	sky: .word 0x2c7493
@@ -32,8 +29,13 @@
 # main to start from which leads to a loop to 
 # create our static view
 main:
-	jal paintSky
-	j paintFirstPipe
+	start:
+		getKeyboardInput:	
+		lw $t0, 0xffff0000
+		bne, $t0, 1, getKeyboardInput
+	
+		jal paintSky
+		j paintFirstPipe
 
 	mainLoop: # Main loop until the game is over
 
@@ -57,14 +59,37 @@ main:
 
 			# Sleep to delay animation
 			li $v0, 32		
-			li $a0, 64	# Jessica slowed down the animation
+			li $a0, 64
 			syscall
-		
+			
+			jal keyboardInput
 			jal paintSky
 			jal adjustPipes
 			j mainLoop
 
+keyboardInput:	
+	lw $t0, 0xffff0000
+	beq, $t0, 1, getInput
+	jr $ra
+	
+getInput:
+	lw $t1, 0xffff0004
+	beq, $t1, 0x61, moveLeft
+	beq, $t1, 0x64, moveRight
+	jr $ra
+	
+moveLeft:	
+	lw $t0, birdPos
+	addi $t0, $t0, -8
+	sw $t0, birdPos
+	jr $ra
 
+moveRight:
+	lw $t0, birdPos
+	addi $t0, $t0, 8
+	sw $t0, birdPos
+	jr $ra
+	
 paintSky:
 	paintSkyLoopInit:
 		lw $t0, displayAddress	# $t0 stores the base address for display
