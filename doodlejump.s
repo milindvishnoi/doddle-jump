@@ -31,6 +31,8 @@
 # create our static view
 main:
 	start:
+		jal printStartScreen
+	
 		getKeyboardInput:	
 		lw $t0, 0xffff0000
 		bne, $t0, 1, getKeyboardInput
@@ -399,6 +401,78 @@ paintPipes:
 	li $t4, 1024
 	jr $ra
 
+printStartScreen:
+	# Spell doodle
+	li $t0, 0x10008214
+	lw $t1, red
+	jal paintD
+	jal animateLetters
+
+	li $t0, 0x10008324
+	jal paintO
+	jal animateLetters
+
+	li $t0, 0x10008334
+	jal paintO
+	jal animateLetters
+
+	li $t0, 0x10008244
+	jal paintD
+	jal animateLetters
+
+	li $t0, 0x10008254
+	jal paintL
+	jal animateLetters
+
+	li $t0, 0x10008264
+	jal paintE
+	jal animateLetters
+
+	# Spell jump
+	li $t0, 0x100085a4
+	jal paintJ
+	jal animateLetters
+
+	li $t0, 0x10008634
+	jal paintU
+	jal animateLetters
+
+	li $t0, 0x10008644
+	jal paintM
+	jal animateLetters
+
+	li $t0, 0x1000865c
+	jal paintP
+	jal animateLetters
+
+	# Spell "play - p"
+	li $t0, 0x1000898c
+	jal paintP
+	jal animateLetters
+
+	li $t0, 0x1000889c
+	jal paintL
+	jal animateLetters
+
+	li $t0, 0x100089ac
+	jal paintA
+	jal animateLetters
+
+	li $t0, 0x100089c0
+	jal paintY
+	jal animateLetters
+
+	li $t0, 0x10008a50
+	jal paintDash
+	jal animateLetters
+
+	li $t0, 0x10008968
+	jal paintP
+	jal animateLetters
+
+	jr $ra
+
+
 # For all paint letter functions we need to provide the color in $t1 
 # and location of top-left block in $t0
 paintR:
@@ -429,11 +503,126 @@ paintP:
 	sw $t1, 512($t0)
 	sw $t1, 4($t0)
 	sw $t1, 8($t0)
-	sw $t1, 12($t0)
-	sw $t1, 140($t0)
-	sw $t1, 268($t0)
+	sw $t1, 136($t0)
 	sw $t1, 264($t0)
 	sw $t1, 260($t0)
+	jr $ra
+
+paintD:
+	sw $t1, 8($t0)
+	sw $t1, 136($t0)
+	sw $t1, 264($t0)
+	sw $t1, 260($t0)
+	sw $t1, 256($t0)
+	sw $t1, 392($t0)
+	sw $t1, 520($t0)
+	sw $t1, 516($t0)
+	sw $t1, 512($t0)
+	sw $t1, 384($t0)
+	jr $ra
+
+paintO:
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 128($t0)
+	sw $t1, 136($t0)
+	sw $t1, 256($t0)
+	sw $t1, 260($t0)
+	sw $t1, 264($t0)
+	jr $ra
+
+paintL:
+	sw $t1, 0($t0)
+	sw $t1, 128($t0)
+	sw $t1, 256($t0)
+	sw $t1, 384($t0)
+	sw $t1, 512($t0)
+	sw $t1, 516($t0)
+	sw $t1, 520($t0)
+	sw $t1, 392($t0)
+	jr $ra
+
+paintE:
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 128($t0)
+	sw $t1, 136($t0)
+	sw $t1, 256($t0)
+	sw $t1, 260($t0)
+	sw $t1, 264($t0)
+	sw $t1, 384($t0)
+	sw $t1, 512($t0)
+	sw $t1, 516($t0)
+	sw $t1, 520($t0)
+	jr $ra
+
+paintJ:
+	sw $t1, 8($t0)
+	sw $t1, 136($t0)
+	sw $t1, 264($t0)
+	sw $t1, 392($t0)
+	sw $t1, 256($t0)
+	sw $t1, 384($t0)
+	sw $t1, 388($t0)
+	jr $ra
+
+paintU:
+	sw $t1, 0($t0)
+	sw $t1, 8($t0)
+	sw $t1, 128($t0)
+	sw $t1, 136($t0)
+	sw $t1, 256($t0)
+	sw $t1, 260($t0)
+	sw $t1, 264($t0)
+	jr $ra
+
+paintM:
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 12($t0)
+	sw $t1, 16($t0)
+	sw $t1, 128($t0)
+	sw $t1, 256($t0)
+	sw $t1, 136($t0)
+	sw $t1, 264($t0)
+	sw $t1, 144($t0)
+	sw $t1, 272($t0)
+	jr $ra
+
+paintA:
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 128($t0)
+	sw $t1, 136($t0)
+	sw $t1, 256($t0)
+	sw $t1, 260($t0)
+	sw $t1, 264($t0)
+	sw $t1, 268($t0)
+	jr $ra
+
+paintY:
+	sw $t1, 0($t0)
+	sw $t1, 8($t0)
+	sw $t1, 128($t0)
+	sw $t1, 136($t0)
+	sw $t1, 256($t0)
+	sw $t1, 260($t0)
+	sw $t1, 264($t0)
+	sw $t1, 392($t0)
+	sw $t1, 520($t0)
+	sw $t1, 516($t0)
+	sw $t1, 512($t0)
+	jr $ra
+
+paintDash:
+	sw $t1, 0($t0)
+	sw $t1, 4($t0)
+	sw $t1, 8($t0)
+	sw $t1, 12($t0)
 	jr $ra
 
 Exit:
