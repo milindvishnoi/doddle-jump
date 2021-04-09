@@ -27,6 +27,7 @@
 	topPipePos: .word 4
 	startMovingPipes: .word 1664
 	endOfScreen: .word 4096
+	score: .word 1
 	
 	# Colors for painting on the screen
 	sky: .word 0x2c7493
@@ -69,7 +70,7 @@ main:
 			lw $t0, displayAddress # Display Address
 			lw $t1, bird # Bird Color
 			jal animateDown
-			#j nothing
+			#j checkNotification
 
 		animateBird2:
 			lw $t0, up2
@@ -79,13 +80,18 @@ main:
 			lw $t0, displayAddress # Display Address
 			lw $t1, red # Bird Color
 			jal animateUp2
-			j nothing
+			j checkNotification
 			
 		animateBird2Down:
 			lw $t0, displayAddress # Display Address
 			lw $t1, red # Bird Color
 			jal animateDown2
-			j nothing
+			j checkNotification
+
+
+		checkNotification:
+			j showNotification
+
 
 		nothing:
 
@@ -423,6 +429,11 @@ BirdHit:
 	la $t0, up
 	li $t1, 1
 	sw $t1, up
+
+	# Adding 1 to score
+	lw $t2, score
+	addi $t2, $t2, 1
+	sw $t2, score
 	
 	j backToAnimateDown
 	
@@ -485,6 +496,11 @@ Bird2Hit:
 	la $t0, up2
 	li $t1, 1
 	sw $t1, up2
+
+	# Adding 1 to score
+	lw $t2, score
+	addi $t2, $t2, 1
+	sw $t2, score
 	
 	j backToAnimateDown2
 	
@@ -642,6 +658,46 @@ paintPipes:
 	
 	li $t4, 1024
 	jr $ra
+
+showNotification:
+	checkIfDivBy10:
+		lw $t0, score
+		li $t1, 10
+		div $t0, $t1
+		mfhi $t0
+		beq $t0, $zero, DivBy10Then
+
+	checkIfDivBy5:
+		lw $t0, score
+		li $t1, 5
+		div $t0, $t1
+		mfhi $t0
+		beq $t0, $zero, DivBy5Then
+
+	goToNothing:
+		j nothing
+
+	DivBy5Then:
+		li $t0, 0x100086a4
+		lw $t1, red
+		jal paintW
+		
+		li $t0, 0x1000873c
+		jal paintO
+
+		li $t0, 0x100086cc
+		jal paintW
+		j goToNothing
+
+	DivBy10Then:
+		li $t0, 0x100086b4
+		lw $t1, red
+		jal paintY
+		
+		li $t0, 0x10008744
+		jal paintO
+
+		j goToNothing
 
 printStartScreen:
 	# Spell doodle
@@ -865,6 +921,21 @@ paintDash:
 	sw $t1, 4($t0)
 	sw $t1, 8($t0)
 	sw $t1, 12($t0)
+	jr $ra
+
+paintW:
+	sw $t1, 0($t0)
+	sw $t1, 128($t0)
+	sw $t1, 256($t0)
+	sw $t1, 384($t0)
+	sw $t1, 388($t0)
+	sw $t1, 264($t0)
+	sw $t1, 392($t0)
+	sw $t1, 396($t0)
+	sw $t1, 400($t0)
+	sw $t1, 272($t0)
+	sw $t1, 144($t0)
+	sw $t1, 16($t0)
 	jr $ra
 
 Exit:
