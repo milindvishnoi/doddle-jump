@@ -1,4 +1,11 @@
-# Demo for painting
+#####################################################################
+#
+# CSC258H5S Winter 2021 Assembly Programming Project
+# University of Toronto Mississauga
+#
+# Group members:
+# - Student 1: Milind Vishnoi, 1005416444
+# - Student 2 (if any): Name, Student Number
 #
 # Bitmap Display Configuration:
 # - Unit width in pixels: 8					     
@@ -7,10 +14,21 @@
 # - Display height in pixels: 256
 # - Base Address for Display: 0x10008000 ($gp)
 #
-
-# playing: player1 - 'a' for left, 'd' for right player2 - 'j' for left, 'l' for right
-# ending: click 'r' to restart, 'q' to quit
-# DON'T PRESS TWO KEYS AT THE SAME TIME!!!
+# Which milestone is reached in this submission?
+# (See the assignment handout for descriptions of the milestones)
+# - Milestone 5 
+#
+# Which approved additional features have been implemented?
+# (See the assignment handout for the list of additional features)
+# 1. Two Doodlers.
+# 2. Dynamic on-screen notification messages
+# 3. Fancier graphics
+#
+# Any additional information that the TA needs to know:
+# - For bird 1, you can control it by pressing 'a' for left and 'd' for right
+# - For bird 2, you can control it by pressing 'j' for left and 'l' for right
+# - After the game ends you can restart with 'r' or end with 'q'
+#####################################################################
 
 
 .data
