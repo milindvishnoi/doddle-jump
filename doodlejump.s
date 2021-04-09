@@ -7,12 +7,21 @@
 # - Display height in pixels: 256
 # - Base Address for Display: 0x10008000 ($gp)
 #
+
+# playing: player1 - 'a' for left, 'd' for right player2 - 'j' for left, 'l' for right
+# ending: click 'r' to restart, 'q' to quit
+# DON'T PRESS TWO KEYS AT THE SAME TIME!!!
+
+
 .data
 	displayAddress:	.word 0x10008000
 	pipeLength: .word 4
-	birdPos: .word 3648
+	birdPos: .word 3636
+	bird2Pos: .word 3660
 	height: .word 0
+	height2: .word 0
 	up: .word 1
+	up2: .word 1
 	middlePipePos: .word 4
 	bottomPipePos: .word 4
 	topPipePos: .word 4
@@ -35,8 +44,9 @@ main:
 		j printStartScreen
 	
 		getKeyboardInput:	
-		lw $t0, 0xffff0000
-		bne, $t0, 1, getKeyboardInput
+			lw $t0, 0xffff0000
+			bne, $t0, 1, getKeyboardInput
+			
 	
 	paintInitialBackground:
 		jal paintSky
@@ -47,17 +57,34 @@ main:
 		animateBird:
 			lw $t0, up
 			blez $t0, animateBirdDown
-		
+			
 		animateBirdUp:
 			lw $t0, displayAddress # Display Address
 			lw $t1, bird # Bird Color
 			jal animateUp
-			j nothing
-		
+			# j nothing
+			j animateBird2
+			
 		animateBirdDown:
 			lw $t0, displayAddress # Display Address
 			lw $t1, bird # Bird Color
 			jal animateDown
+			#j nothing
+
+		animateBird2:
+			lw $t0, up2
+			blez $t0, animateBird2Down
+
+		animateBird2Up:
+			lw $t0, displayAddress # Display Address
+			lw $t1, red # Bird Color
+			jal animateUp2
+			j nothing
+			
+		animateBird2Down:
+			lw $t0, displayAddress # Display Address
+			lw $t1, red # Bird Color
+			jal animateDown2
 			j nothing
 
 		nothing:
@@ -91,13 +118,22 @@ main:
 		restart:
 			lw $t0, height	
 			sw $zero, height	# reset height
-				
+
+			lw $t0, height2	
+			sw $zero, height2	# reset height
+							
 			li $t1, 1		# reset up
 			sw $t1, up
-				
-			li $t1, 3648		# reset birdPos
+
+			li $t1, 1		# reset up
+			sw $t1, up2
+							
+			li $t1, 3636		# reset birdPos
 			sw $t1, birdPos
 			
+			li $t1, 3660		# reset birdPos
+			sw $t1, bird2Pos
+						
 			j paintInitialBackground
 			
 			
@@ -131,7 +167,15 @@ checkGameOver:
 	lw $t0, birdPos
 	addi $t0, $t0, 256 # bottom of the bird
 	lw $t1, endOfScreen
-	bgt $t0, $t1, gameOver
+	bgt $t0, $t1, gameOver2
+	j mainLoop
+
+gameOver2:
+	lw $t0, bird2Pos
+	addi $t0, $t0, 256 # bottom of the bird
+	lw $t1, endOfScreen
+	bgt $t0, $t1, gameOver	
+	
 	j mainLoop
 
 keyboardInput:	
@@ -141,8 +185,10 @@ keyboardInput:
 	
 getInput:
 	lw $t1, 0xffff0004
-	beq, $t1, 0x61, moveLeft
-	beq, $t1, 0x64, moveRight
+	beq, $t1, 0x61, moveLeft	# a to move left
+	beq, $t1, 0x64, moveRight	# d to move right
+	beq, $t1, 0x6A, moveLeft2	# j to move bird2 left
+	beq, $t1, 0x6C, moveRight2	# l to move bird2 right
 	jr $ra
 	
 moveLeft:	
@@ -155,6 +201,18 @@ moveRight:
 	lw $t0, birdPos
 	addi $t0, $t0, 8
 	sw $t0, birdPos
+	jr $ra
+	
+moveLeft2:	
+	lw $t0, bird2Pos
+	addi $t0, $t0, -8
+	sw $t0, bird2Pos
+	jr $ra
+
+moveRight2:
+	lw $t0, bird2Pos
+	addi $t0, $t0, 8
+	sw $t0, bird2Pos
 	jr $ra
 	
 paintSky:
@@ -220,6 +278,40 @@ animateUp:
 		sw $t1, 0($t0) # Store new jump height
 
 	jr $ra
+	
+animateUp2:
+	lw $t2, bird2Pos # Bird Offset
+	add $s1, $t0, $t2 # Current Bird Location 	
+
+	sw $t1, 0($s1)   # Next 5 lines drawing the bird
+	sw $t1, 124($s1)
+	sw $t1, 128($s1)
+	sw $t1, 132($s1)
+	sw $t1, 252($s1)
+	sw $t1, 260($s1)
+
+	la $t0, bird2Pos # Address of birdPos
+	lw $t1, bird2Pos # Value of birdPos
+	addi $t1, $t1, -128 # Move a line up
+	sw $t1, 0($t0) # Store new bird location in birdPos
+
+	la $t0, height2 # Address of jump
+	lw $t1, height2 # Value of jump
+	addi $t1, $t1, 1 # $t1 += 1
+
+	jumpUpComplete2:
+		beq $t1, 10, jumpUpCompleteThen2
+		j jumpUpCompleteDone2
+	
+	jumpUpCompleteThen2:
+		la $t2, up2 # Address of up
+		li $t3, 0 
+		sw $t3, 0($t2) # Make up true by setting it to 1
+
+	jumpUpCompleteDone2:
+		sw $t1, 0($t0) # Store new jump height
+
+	jr $ra
 
 animateDown:
 	lw $t2, birdPos # Bird Offset
@@ -244,8 +336,36 @@ animateDown:
 	sw $t1, 0($t0) # Store new jump height
 	
 	j checkBirdHitPipe
-	here:
-		jr $ra
+	
+backToAnimateDown:
+	jr $ra
+		
+animateDown2:
+	lw $t2, bird2Pos # Bird Offset
+	add $s1, $t0, $t2 # Current Bird Location
+
+	sw $t1, 0($s1)   # Next 5 lines drawing the bird
+	sw $t1, 124($s1)
+	sw $t1, 128($s1)
+	sw $t1, 132($s1)
+	sw $t1, 252($s1)
+	sw $t1, 260($s1)
+
+	la $t0 bird2Pos # Address of birdPos
+	lw $t1 bird2Pos # Value of birdPos
+	addi $t1, $t1, 128 # Move a line down
+	sw $t1, 0($t0) # Store new bird location in birdPos
+
+	la $t0, height2 # Address of jump
+	lw $t1, height2 # Value of jump
+	addi $t1, $t1, -1 # $t1 += 1
+
+	sw $t1, 0($t0) # Store new jump height
+	
+	j checkBird2HitPipe
+
+backToAnimateDown2:
+	jr $ra
 		
 checkBirdHitPipe:
 	lw $t0, birdPos			# Get pos of bird
@@ -304,16 +424,88 @@ BirdHit:
 	li $t1, 1
 	sw $t1, up
 	
-	j here
+	j backToAnimateDown
 	
 BirdNotHit:
-	j here
+	j backToAnimateDown
+
+checkBird2HitPipe:
+	lw $t0, bird2Pos			# Get pos of bird
 	
+	addi $t1, $t0, 380		# Get left leg
+	addi $t2, $t0, 388		# Get right leg
+	
+checkLeft2GreaterThanTopPipe:
+	lw $t3, topPipePos		# Get start point of top pipe 
+	addi $t4, $t3, 32		# Get end point of top pipe (= start + (8 * 4))
+	blt $t1, $t3, checkRight2GreaterThanTopPipe
+
+checkLeft2LessThanTopPipe:
+	ble $t1, $t4, Bird2Hit
+
+checkRight2GreaterThanTopPipe:
+	blt $t2, $t3, checkLeft2GreaterThanMiddlePipe
+
+checkRight2LessThanTopPipe:
+	ble $t2, $t4, Bird2Hit	
+	
+checkLeft2GreaterThanMiddlePipe:
+	lw $t3, middlePipePos		# Get start point of middle pipe 
+	addi $t4, $t3, 32		# Get end point of middle pipe (= start + (8 * 4))
+	blt $t1, $t3, checkRight2GreaterThanMiddlePipe
+
+checkLeft2LessThanMiddlePipe:
+	ble $t1, $t4, Bird2Hit
+
+checkRight2GreaterThanMiddlePipe:
+	blt $t2, $t3, checkLeft2GreaterThanBottomPipe
+
+checkRight2LessThanMiddlePipe:
+	ble $t2, $t4, Bird2Hit
+
+checkLeft2GreaterThanBottomPipe:
+	lw $t5, bottomPipePos		# Get start of bottom pipe
+	addi $t6, $t5, 32		# Get end of bottom pipe
+	blt $t1, $t5, checkRight2GreaterThanBottomPipe
+
+checkLeft2LessThanBottomPipe:
+	ble $t1, $t6, Bird2Hit
+	
+checkRight2GreaterThanBottomPipe:
+	blt $t2, $t5, Bird2NotHit
+
+checkRight2LessThanBottomPipe:
+	ble $t2, $t6, Bird2Hit
+	j Bird2NotHit
+	
+Bird2Hit:
+	la $t0, height2 # Address of jump
+	sw $zero, 0($t0)
+	
+	la $t0, up2
+	li $t1, 1
+	sw $t1, up2
+	
+	j backToAnimateDown2
+	
+Bird2NotHit:
+	j backToAnimateDown2	
+
+						
 adjustPipes:
-	lw $t0, birdPos
-	lw $t1, startMovingPipes
+	checkBirdOne:
+		lw $t0, birdPos
+		lw $t1, startMovingPipes
 	
-	bge $t0, $t1, redrawPipes # only move pipes if bird is at least at the middle row
+		blt $t0, $t1, adjust # only move pipes if bird is at least at the middle row
+	
+	checkBirdTwo:
+		lw $t0, bird2Pos
+		lw $t1, startMovingPipes
+	
+		bge $t0, $t1, redrawPipes # only move pipes if bird is at least at the middle row
+
+adjust:
 	la $t0, up
 	beq $zero, $t0, redrawPipes # and if bird is moving up
 	
