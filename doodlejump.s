@@ -16,13 +16,14 @@
 	middlePipePos: .word 4
 	bottomPipePos: .word 4
 	topPipePos: .word 4
-	startMovingPipes: .word 2424
+	startMovingPipes: .word 1664
 	endOfScreen: .word 4096
 	
 	# Colors for painting on the screen
 	sky: .word 0x2c7493
 	pipe: .word 0x361414
 	bird: .word 0x2f5c2c
+	black: .word 0x00000000
 	red: .word 0xEE2020
 	
 
@@ -31,12 +32,13 @@
 # create our static view
 main:
 	start:
-		jal printStartScreen
+		j printStartScreen
 	
 		getKeyboardInput:	
 		lw $t0, 0xffff0000
 		bne, $t0, 1, getKeyboardInput
 	
+	paintInitialBackground:
 		jal paintSky
 		j paintFirstPipe
 
@@ -75,8 +77,30 @@ main:
 		j mainLoop
 		
 	gameOver:
-		jal paintGameOverScreen
-		j Exit
+		j paintGameOverScreen
+		
+		endGameInput:
+			lw $t0, 0xffff0000
+			bne, $t0, 1, endGameInput
+		
+		lw $t1, 0xffff0004
+		beq, $t1, 0x72, restart		# click 'r' to restart
+		beq, $t1, 0x71, paintBlank	# click 'q' to exit
+		j endGameInput
+		
+		restart:
+			lw $t0, height	
+			sw $zero, height	# reset height
+				
+			li $t1, 1		# reset up
+			sw $t1, up
+				
+			li $t1, 3648		# reset birdPos
+			sw $t1, birdPos
+			
+			j paintInitialBackground
+			
+			
 
 paintGameOverScreen:
 	li $t0, 0x100088A8
@@ -93,7 +117,7 @@ paintGameOverScreen:
 	li $t0, 0x100087C8
 	jal paintP
 
-	jr $ra
+	j endGameInput
 
 animateLetters:
 	# Sleep to delay animation
@@ -147,6 +171,21 @@ paintSky:
 		ble $t0, $t2, paintSkyLoop
 	
 	jr $ra
+	
+paintBlank:
+	paintBlankLoopInit:
+		lw $t0, displayAddress	# $t0 stores the base address for display
+		lw $t1, black				# $t1 stores the blue colour code
+		addi $t2, $zero, 4096
+		addi $t2, $t2, 0x10008000
+		j paintSkyLoop
+
+	paintBlankLoop:
+		sw $t1, 0($t0)	 		# paint the first (top-left) unit red.
+		addi $t0, $t0, 4 		# $t0 = $t0++
+		ble $t0, $t2, paintSkyLoop
+	
+	j Exit
 
 animateUp:
 	lw $t2, birdPos # Bird Offset
@@ -169,7 +208,7 @@ animateUp:
 	addi $t1, $t1, 1 # $t1 += 1
 
 	jumpUpComplete:
-		beq $t1, 8, jumpUpCompleteThen
+		beq $t1, 10, jumpUpCompleteThen
 		j jumpUpCompleteDone
 	
 	jumpUpCompleteThen:
@@ -214,12 +253,23 @@ checkBirdHitPipe:
 	addi $t1, $t0, 380		# Get left leg
 	addi $t2, $t0, 388		# Get right leg
 	
-	lw $t3, middlePipePos		# Get start point of middle pipe 
-	addi $t4, $t3, 32		# Get end point of middle pipe (= start + (8 * 4))
-	lw $t5, bottomPipePos		# Get start of bottom pipe
-	addi $t6, $t5, 32		# Get end of bottom pipe	
+checkLeftGreaterThanTopPipe:
+	lw $t3, topPipePos		# Get start point of top pipe 
+	addi $t4, $t3, 32		# Get end point of top pipe (= start + (8 * 4))
+	blt $t1, $t3, checkRightGreaterThanTopPipe
+
+checkLeftLessThanTopPipe:
+	ble $t1, $t4, BirdHit
+
+checkRightGreaterThanTopPipe:
+	blt $t2, $t3, checkLeftGreaterThanMiddlePipe
+
+checkRightLessThanTopPipe:
+	ble $t2, $t4, BirdHit	
 	
 checkLeftGreaterThanMiddlePipe:
+	lw $t3, middlePipePos		# Get start point of middle pipe 
+	addi $t4, $t3, 32		# Get end point of middle pipe (= start + (8 * 4))
 	blt $t1, $t3, checkRightGreaterThanMiddlePipe
 
 checkLeftLessThanMiddlePipe:
@@ -232,6 +282,8 @@ checkRightLessThanMiddlePipe:
 	ble $t2, $t4, BirdHit
 
 checkLeftGreaterThanBottomPipe:
+	lw $t5, bottomPipePos		# Get start of bottom pipe
+	addi $t6, $t5, 32		# Get end of bottom pipe
 	blt $t1, $t5, checkRightGreaterThanBottomPipe
 
 checkLeftLessThanBottomPipe:
@@ -279,8 +331,6 @@ adjustPipes:
 	
 	lw $t1, endOfScreen	# if bottom pipe is on last row, generate a new pipe
 	bge $t0, $t1, generateNewPipe
-
-	j alwaysCheckGameOver
 	
 redrawPipes: 		# re-draw all pipes in same positions
 	jal paintPipesInit
@@ -378,7 +428,7 @@ thirdPipe:
 	j mainLoop
 	
 paintPipesInit:
-	li $t3, 2944		# start drawing pipes on bottom row
+	li $t3, 3072		# start drawing pipes on bottom row
 	li $t4, 0		# row offset
 	
 	jr $ra
@@ -470,7 +520,7 @@ printStartScreen:
 	jal paintP
 	jal animateLetters
 
-	jr $ra
+	j getKeyboardInput
 
 
 # For all paint letter functions we need to provide the color in $t1 
